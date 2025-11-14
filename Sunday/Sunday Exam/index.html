@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sunday Exam Tools & Directories</title>
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+        // Replace with your Firebase config
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.db = db; // Make db available globally
+    </script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #87ceeb 0%, #9370db 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        h1 {
+            text-align: center;
+            color: #4b0082;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .main-menu {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #add8e6 0%, #ba55d3 100%);
+            padding: 15px;
+            border-radius: 25px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
+        }
+        .main-menu button {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #4b0082;
+            padding: 12px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 20px;
+            font-weight: bold;
+            color: #4b0082;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .main-menu button:hover {
+            background: #4b0082;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .main-menu button.active {
+            background: #4b0082;
+            color: white;
+        }
+        .tab {
+            display: none;
+            background: linear-gradient(135deg, #e0f6ff 0%, #dda0dd 100%);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .tab.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h2 {
+            color: #4b0082;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.8em;
+        }
+        form {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 10px;
+            align-items: center;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        label {
+            text-align: right;
+            font-weight: bold;
+            color: #555;
+        }
+        input, select {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            width: 100%;
+            background: white;
+            color: #333;
+            transition: border-color 0.3s ease;
+        }
+        input:focus, select:focus {
+            border-color: #4b0082;
+            outline: none;
+            box-shadow: 0 0 8px rgba(75, 0, 130, 0.3);
+        }
+        button[type="submit"] {
+            grid-column: span 2;
+            background: linear-gradient(135deg, #add8e6 0%, #ba55d3 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        button[type="submit"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+        button {
+            background: linear-gradient(135deg, #add8e6 0%, #ba55d3 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: linear-gradient(135deg, #add8e6 0%, #ba55d3 100%);
+            color: white;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background: #f0f8ff;
+        }
+        tr:hover {
+            background: #e6e6fa;
+            transition: background 0.3s ease;
+        }
+        table input {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #rankHolders {
+            text-align: center;
+        }
+        #rankHolders h3 {
+            color: #4b0082;
+            margin-top: 30px;
+            font-size: 1.5em;
+        }
+        #rankHolders ol {
+            list-style: none;
+            padding: 0;
+        }
+        #rankHolders li {
+            background: linear-gradient(135deg, #e0f6ff 0%, #dda0dd 100%);
+            margin: 5px 0;
+            padding: 12px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sunday Exam Tools & Directories</h1>
+    <div class="main-menu">
+        <button onclick="showTab(0)">Student Registration</button>
+        <button onclick="showTab(1)">Students' List</button>
+        <button onclick="showTab(2)">Results</button>
+        <button onclick="showTab(3)">Rank Holders</button>
+    </div>
+    
+    <!-- Tab 0: Registration -->
+    <div id="tab0" class="tab active">
+        <h2>Register Student</h2>
+        <form id="registerForm">
+            <label>Name:</label> <input type="text" id="name" required>
+            <label>Father's Name:</label> <input type="text" id="fatherName" required>
+            <label>Class:</label> 
+            <select id="class" required>
+                <option value="">Select</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+            </select>
+            <button type="submit">Register</button>
+        </form>
+    </div>
+    
+    <!-- Tab 1: Students' List -->
+    <div id="tab1" class="tab">
+        <h2>Students' List</h2>
+        <table id="studentsTable">
+            <thead>
+                <tr><th>Name</th><th>Father's Name</th><th>Class</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    
+    <!-- Tab 2: Results -->
+    <div id="tab2" class="tab">
+        <h2>Enter Results</h2>
+        <table id="resultsTable">
+            <thead>
+                <tr><th>Name</th><th>Class</th><th>Marks (out of 40)</th><th>Action</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    
+    <!-- Tab 3: Rank Holders -->
+    <div id="tab3" class="tab">
+        <h2>Rank Holders</h2>
+        <div id="rankHolders"></div>
+    </div>
+
+    <script>
+        let students = [];
+        let results = {};
+
+        // Load data from Firestore on app start
+        async function loadData() {
+            const studentsSnapshot = await getDocs(collection(window.db, 'students'));
+            students = studentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const resultsSnapshot = await getDocs(collection(window.db, 'results'));
+            results = {};
+            resultsSnapshot.docs.forEach(doc => {
+                results[doc.data().studentIndex] = doc.data().marks;
+            });
+            updateStudentsList();
+            updateResultsTable();
+        }
+
+        // Real-time listener for updates
+        onSnapshot(collection(window.db, 'students'), () => loadData());
+        onSnapshot(collection(window.db, 'results'), () => loadData());
+
+        function showTab(index) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.main-menu button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('tab' + index).classList.add('active');
+            document.querySelectorAll('.main-menu button')[index].classList.add('active');
+            if (index === 1) updateStudentsList();
+            if (index === 2) updateResultsTable();
+            if (index === 3) calculateRankHolders();
+        }
+
+        // Registration
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const fatherName = document.getElementById('fatherName').value;
+            const cls = document.getElementById('class').value;
+            await addDoc(collection(window.db, 'students'), { name, fatherName, class: cls });
+            alert('Student registered!');
+            this.reset();
+        });
+
+        // Update Students' List
+        function updateStudentsList() {
+            const tbody = document.querySelector('#studentsTable tbody');
+            tbody.innerHTML = '';
+            students.forEach(student => {
+                const row = `<tr><td>${student.name}</td><td>${student.fatherName}</td><td>${student.class}</td></tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        // Update Results Table
+        function updateResultsTable() {
+            const tbody = document.querySelector('#resultsTable tbody');
+            tbody.innerHTML = '';
+            students.forEach((student, index) => {
+                const marks = results[index] || '';
+                const row = `<tr>
+                    <td>${student.name}</td>
+                    <td>${student.class}</td>
+                    <td><input type="number" min="0" max="40" value="${marks}" onchange="updateMarks(${index}, this.value)"></td>
+                    <td><button onclick="saveMarks(${index})">Save</button></td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        async function updateMarks(index, value) {
+            results[index] = value;
+            const resultsRef = collection(window.db, 'results');
+            const existing = await getDocs(resultsRef);
+            const docToUpdate = existing.docs.find(doc => doc.data().studentIndex === index);
+            if (docToUpdate) {
+                await updateDoc(doc(resultsRef, docToUpdate.id), { marks: value });
+            } else {
+                await addDoc(resultsRef, { studentIndex: index, marks: value });
+            }
+        }
+
+        function saveMarks(index) {
+            alert('Marks saved!');
+        }
+
+        // Calculate Rank Holders
+        function calculateRankHolders() {
+            const ranks = { 5: [], 6: [], 7: [], 8: [] };
+            students.forEach((student, index) => {
+                const marks = parseInt(results[index]) || 0;
+                ranks[student.class].push({ name: student.name, marks });
+            });
+            const output = document.getElementById('rankHolders');
+            output.innerHTML = '';
+            for (let cls in ranks) {
+                ranks[cls].sort((a, b) => b.marks - a.marks);
+                output.innerHTML += `<h3>Class ${cls}</h3><ol>`;
+                ranks[cls].slice(0, 3).forEach(student => {
+                    output.innerHTML += `<li>${student.name} - ${student.marks} marks</li>`;
+                });
+                output.innerHTML += '</ol>';
+            }
+        }
+
+        // Initialize
+        loadData();
+        showTab(0);
+    </script>
+</body>
+</html>
