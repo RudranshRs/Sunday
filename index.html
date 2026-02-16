@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Grahini Sahayak</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#FF9933">
+
+    <!-- External Library for Image Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #FF9933; /* Saffron */
+            --primary-dark: #D35400;
+            --secondary: #138808; /* India Green */
+            --bg: #F5F7FA;
+            --card-bg: #FFFFFF;
+            --text: #2D3436;
+            --gray: #B2BEC3;
+            --shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        body { margin: 0; padding: 0; background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; user-select: none; }
+
+        /* --- UTILITIES --- */
+        .hidden { display: none !important; }
+        .flex-center { display: flex; justify-content: center; align-items: center; }
+        .full-screen { width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; }
+        
+        .btn { padding: 14px 24px; border: none; border-radius: 50px; font-weight: 600; cursor: pointer; transition: transform 0.1s; font-size: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; }
+        .btn-secondary { background: white; color: var(--text); border: 1px solid #eee; }
+        .btn-green { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; }
+
+        /* --- ANIMATIONS --- */
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- SPLASH SCREEN --- */
+        #splash { background: radial-gradient(circle at center, #fff 0%, #fff8e1 100%); z-index: 9999; flex-direction: column; }
+        .namaste { font-size: 3.5rem; color: var(--primary-dark); font-weight: 700; opacity: 0; margin-bottom: 20px; animation: scaleReveal 2.5s ease-out forwards; }
+        
+        /* Ganesha SVG Styling */
+        .ganesha-container { width: 220px; height: 220px; position: relative; }
+        .ganesha-path { fill: none; stroke: var(--primary); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1500; stroke-dashoffset: 1500; animation: drawLine 2.2s ease-in-out forwards; }
+        
+        /* Particles */
+        .particle { position: absolute; background: rgba(255, 165, 0, 0.6); border-radius: 50%; pointer-events: none; animation: floatUp 3s infinite linear; }
+
+        @keyframes scaleReveal { 0% { transform: scale(0.8); opacity: 0; } 50% { opacity: 1; } 100% { transform: scale(1.1); opacity: 1; } }
+        @keyframes drawLine { to { stroke-dashoffset: 0; } }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 0; } 50% { opacity: 1; } 100% { transform: translateY(-60px); opacity: 0; } }
+
+        /* --- HEADER --- */
+        header { background: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.03); z-index: 100; height: 60px; }
+        .app-title { font-weight: 800; font-size: 1.2rem; color: var(--primary); letter-spacing: 0.5px; }
+        .nav-link { font-size: 0.9rem; color: #777; font-weight: 600; text-transform: uppercase; padding: 5px 10px; }
+        .nav-link.active { color: var(--primary); background: #fff3e0; border-radius: 20px; }
+
+        /* --- CONTENT AREA --- */
+        .content { height: calc(100vh - 60px); overflow-y: auto; padding: 20px; padding-bottom: 100px; -webkit-overflow-scrolling: touch; }
+
+        /* --- SAAMAN PAGE --- */
+        .search-wrapper { position: sticky; top: 0; background: var(--bg); padding-bottom: 15px; z-index: 50; }
+        .search-input { width: 100%; padding: 15px 20px; border: none; border-radius: 15px; background: white; font-size: 1rem; box-shadow: var(--shadow); color: #444; }
+        .search-input::placeholder { color: #ccc; }
+
+        .item-list { display: flex; flex-wrap: wrap; gap: 10px; }
+        .item-tag { background: white; padding: 10px 18px; border-radius: 30px; font-size: 0.95rem; color: #555; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.02); border: 1px solid transparent; }
+        .item-tag.selected { background: var(--primary); color: white; box-shadow: 0 4px 8px rgba(255, 153, 51, 0.4); border-color: var(--primary); }
+        
+        /* New Highlight Style */
+        .match-char { color: var(--primary-dark); font-weight: 800; text-decoration: underline; text-decoration-color: var(--primary); text-decoration-thickness: 2px; }
+
+        /* Footer Selection Bar */
+        .footer-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: white; padding: 15px; border-top-left-radius: 20px; border-top-right-radius: 20px; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 10px; z-index: 90; transform: translateY(120%); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .footer-bar.visible { transform: translateY(0); }
+        
+        .selection-scroller { display: flex; overflow-x: auto; gap: 8px; padding-bottom: 5px; scrollbar-width: none; }
+        .selection-scroller::-webkit-scrollbar { display: none; }
+        .mini-chip { background: #f0f0f0; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; white-space: nowrap; display: flex; align-items: center; color: #555; }
+        .mini-chip span { margin-left: 6px; color: #e74c3c; font-weight: bold; font-size: 1.1em; }
+
+        /* Add Custom Item */
+        .custom-add-box { text-align: center; margin-top: 40px; color: #888; }
+        .custom-inputs { display: flex; gap: 10px; margin-top: 15px; }
+        .custom-inputs input { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #eee; }
+
+        /* --- REVIEW & LIST PAGES --- */
+        .list-card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 20px; box-shadow: var(--shadow); }
+        .category-header { font-size: 1.1rem; font-weight: 700; color: var(--primary); border-bottom: 2px solid #fff3e0; padding-bottom: 8px; margin-bottom: 12px; }
+        
+        .list-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px dashed #eee; padding-bottom: 8px; }
+        .list-row:last-child { border-bottom: none; margin-bottom: 0; }
+        .item-name { flex: 2; font-weight: 500; font-size: 0.95rem; color: #444; }
+        .item-inputs { flex: 3; display: flex; gap: 8px; justify-content: flex-end; }
+        .input-qty { width: 60px; padding: 8px; border: 1px solid #eee; border-radius: 8px; text-align: center; font-size: 0.9rem; background: #fafafa; }
+        .input-desc { width: 100px; padding: 8px; border: 1px solid #eee; border-radius: 8px; font-size: 0.9rem; background: #fafafa; }
+
+        .action-row { display: flex; gap: 15px; padding: 10px 0; }
+
+        /* --- HISTORY --- */
+        .history-item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 12px; box-shadow: var(--shadow); display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .hist-date { font-weight: 700; color: #333; font-size: 0.95rem; }
+        .hist-count { font-size: 0.85rem; color: #888; margin-top: 4px; }
+        .arrow-icon { color: var(--gray); font-size: 1.2rem; }
+
+        /* Checklist Mode */
+        .check-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+        .check-box { width: 24px; height: 24px; margin-right: 15px; border: 2px solid #ddd; border-radius: 6px; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
+        .check-box.checked { background: var(--secondary); border-color: var(--secondary); }
+        .check-box.checked::after { content: '✓'; color: white; font-size: 16px; font-weight: bold; }
+        .check-text { font-size: 1rem; transition: 0.2s; }
+        .check-text.checked { text-decoration: line-through; color: #aaa; }
+        
+        /* Floating Save Button for Checklist */
+        .fab-save { position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px; background: var(--secondary); border-radius: 50%; box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; justify-content: center; align-items: center; color: white; font-size: 1.5rem; z-index: 100; animation: popIn 0.3s; }
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+
+        /* --- IMAGE GENERATION MODAL --- */
+        #img-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { background: white; padding: 10px; border-radius: 10px; max-height: 80%; overflow-y: auto; text-align: center; }
+        .generated-img { max-width: 100%; height: auto; border: 1px solid #ccc; }
+        .modal-actions { margin-top: 15px; display: flex; gap: 10px; width: 100%; }
+
+        /* --- HIDDEN RECEIPT TEMPLATE (FOR GENERATION) --- */
+        #receipt-template { position: absolute; top: -9999px; left: -9999px; width: 380px; background: #fff; color: #000; padding: 20px; font-family: 'Courier New', monospace; border: 1px solid #000; }
+        .receipt-header { text-align: center; border-bottom: 2px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
+        .receipt-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
+        .receipt-cat { font-weight: bold; margin-top: 10px; border-bottom: 1px solid #000; display: inline-block; margin-bottom: 5px; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Splash Screen -->
+    <div id="splash" class="flex-center full-screen">
+        <div id="particles-container"></div>
+        <div class="namaste">नमस्ते</div>
+        <!-- Line Art Ganesha SVG -->
+        <div class="ganesha-container">
+            <svg viewBox="0 0 200 200" width="100%" height="100%">
+                <path class="ganesha-path" d="M100,30 C80,30 70,50 60,60 C50,70 40,65 30,70 C20,75 10,90 20,110 C25,120 40,120 45,115 L45,130 C45,150 60,170 80,175 C60,175 40,165 30,150 M170,70 C160,65 150,70 140,60 C130,50 120,30 100,30 M155,115 C160,120 175,120 180,110 C190,90 180,75 170,70 M155,115 L155,130 C155,150 140,170 120,175 C140,175 160,165 170,150 M100,55 C100,55 95,80 75,90 C85,100 100,100 100,150 C100,100 115,100 125,90 C105,80 100,55 100,55 M100,45 C100,45 100,50 100,50" />
+                <path class="ganesha-path" d="M70,175 L130,175 M60,185 L140,185" style="stroke-dasharray: 200; stroke-dashoffset: 200; animation-delay: 1s;" />
+            </svg>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="app" class="hidden">
+        
+        <header>
+            <div class="app-title">Grahini Sahayak</div>
+            <div style="display:flex; gap:10px;">
+                <div id="nav-saaman" class="nav-link active" onclick="navigate('saaman')">List</div>
+                <div id="nav-history" class="nav-link" onclick="navigate('history')">History</div>
+            </div>
+        </header>
+
+        <!-- PAGE: Saaman (Selection) -->
+        <div id="page-saaman" class="content fade-in">
+            <div class="search-wrapper">
+                <input type="text" id="search-input" class="search-input" placeholder="Search (e.g. Aloo, Milk)...">
+            </div>
+
+            <div id="item-container" class="item-list"></div>
+
+            <div id="empty-state" class="custom-add-box hidden">
+                <p>No items found.</p>
+                <div class="custom-inputs">
+                    <input type="text" id="cust-eng" placeholder="English (e.g. Bread)">
+                    <input type="text" id="cust-hin" placeholder="Hinglish (e.g. Double Roti)">
+                </div>
+                <button class="btn btn-primary" style="margin-top:10px;" onclick="addCustomItem()">+ Add Custom Item</button>
+            </div>
+        </div>
+
+        <!-- Footer Bar for Saaman -->
+        <div id="footer-bar" class="footer-bar">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.9rem; font-weight:bold; color:var(--primary);">Selected Items</span>
+                <span style="font-size:0.8rem; color:#888;" id="count-display">0 items</span>
+            </div>
+            <div id="selection-scroll" class="selection-scroller"></div>
+            <button class="btn btn-primary" onclick="goToReview()">Proceed to Review &rarr;</button>
+        </div>
+
+        <!-- PAGE: Review & Submit -->
+        <div id="page-review" class="content hidden">
+            <div style="display:flex; align-items:center; margin-bottom:15px;">
+                <button class="btn btn-secondary" style="width:auto; padding:8px 15px; margin-right:15px;" onclick="navigate('saaman')">&larr; Back</button>
+                <h2 style="margin:0; font-size:1.3rem;">Review List</h2>
+            </div>
+            
+            <div id="review-list"></div>
+
+            <div class="action-row">
+                <button class="btn btn-secondary" onclick="generateReceipt()">Generate Image 🖼️</button>
+                <button class="btn btn-green" onclick="shareToWhatsApp()">Share WhatsApp 🟢</button>
+            </div>
+        </div>
+
+        <!-- PAGE: History -->
+        <div id="page-history" class="content hidden">
+            <h2 style="margin-top:0; font-size:1.3rem; margin-bottom:20px;">Shopping History</h2>
+            <div id="history-container"></div>
+        </div>
+
+        <!-- PAGE: Checklist (Inside History) -->
+        <div id="page-checklist" class="content hidden">
+            <div style="display:flex; align-items:center; margin-bottom:15px;">
+                <button class="btn btn-secondary" style="width:auto; padding:8px 15px; margin-right:15px;" onclick="navigate('history')">&larr; Back</button>
+                <h2 style="margin:0; font-size:1.3rem;">Check Items</h2>
+            </div>
+            <div id="checklist-container"></div>
+            <!-- Floating Save Button -->
+            <div class="fab-save" onclick="saveChecklistProgress()">💾</div>
+        </div>
+
+    </div>
+
+    <!-- Modals & Hidden Elements -->
+    <div id="img-modal" class="hidden">
+        <div class="modal-content">
+            <h3 style="margin:0 0 10px 0;">Your List Image</h3>
+            <div id="img-output-container"></div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="closeImgModal()">Close</button>
+            <button class="btn btn-green" onclick="shareImg()">Download/Share</button>
+        </div>
+    </div>
+
+    <!-- Hidden HTML Structure for Image Generation -->
+    <div id="receipt-template">
+        <div class="receipt-header">
+            <h3>SHOPPING LIST</h3>
+            <p id="receipt-date"></p>
+        </div>
+        <div id="receipt-body"></div>
+        <div style="margin-top:20px; text-align:center; font-size:10px; border-top:1px dashed #000; padding-top:5px;">
+            Created with Grahini Sahayak
+        </div>
+    </div>
+
+<script>
+/* ---------------- DATA ---------------- */
+const rawItems = [
+    ["Vegetables", "Potato – Aloo"], ["Vegetables", "Onion – Pyaz"], ["Vegetables", "Tomato – Tamatar"], ["Vegetables", "Garlic – Lahsun"], ["Vegetables", "Ginger – Adrak"], ["Vegetables", "Green Chilli – Hari Mirch"], ["Vegetables", "Coriander Leaves – Dhaniya"], ["Vegetables", "Spinach – Palak"], ["Vegetables", "Cauliflower – Gobi"], ["Vegetables", "Cabbage – Patta Gobhi"], ["Vegetables", "Carrot – Gajar"], ["Vegetables", "Lady Finger – Bhindi"], ["Vegetables", "Bottle Gourd – Lauki"], ["Vegetables", "Bitter Gourd – Karela"], ["Vegetables", "Pumpkin – Kaddu"], ["Vegetables", "Capsicum – Shimla Mirch"], ["Vegetables", "Lemon – Nimbu"], ["Vegetables", "Cucumber – Kheera"],
+    ["Fruits", "Banana – Kela"], ["Fruits", "Apple – Seb"], ["Fruits", "Mango – Aam"], ["Fruits", "Grapes – Angoor"], ["Fruits", "Papaya – Papita"], ["Fruits", "Pomegranate – Anar"], ["Fruits", "Orange – Santra"], ["Fruits", "Guava – Amrood"], ["Fruits", "Watermelon – Tarbooj"],
+    ["Grains & Flour", "Wheat Flour – Aata"], ["Grains & Flour", "Rice – Chawal"], ["Grains & Flour", "Basmati Rice – Basmati"], ["Grains & Flour", "Besan – Besan"], ["Grains & Flour", "Maida – Maida"], ["Grains & Flour", "Suji – Suji"], ["Grains & Flour", "Poha – Poha"], ["Grains & Flour", "Dalia – Dalia"],
+    ["Pulses", "Toor Dal – Arhar"], ["Pulses", "Moong Dal – Moong"], ["Pulses", "Masoor Dal – Masoor"], ["Pulses", "Chana Dal – Chana"], ["Pulses", "Rajma – Rajma"], ["Pulses", "Chickpeas – Chole"], ["Pulses", "Black Gram – Urad"],
+    ["Spices", "Salt – Namak"], ["Spices", "Turmeric – Haldi"], ["Spices", "Red Chilli – Lal Mirch"], ["Spices", "Coriander Pwdr – Dhaniya"], ["Spices", "Cumin – Jeera"], ["Spices", "Mustard Seeds – Rai"], ["Spices", "Garam Masala – Masala"], ["Spices", "Asafoetida – Hing"], ["Spices", "Cardamom – Elaichi"], ["Spices", "Cloves – Laung"],
+    ["Dairy & Oil", "Milk – Doodh"], ["Dairy & Oil", "Curd – Dahi"], ["Dairy & Oil", "Paneer – Paneer"], ["Dairy & Oil", "Butter – Makkhan"], ["Dairy & Oil", "Ghee – Ghee"], ["Dairy & Oil", "Mustard Oil – Sarson Tel"], ["Dairy & Oil", "Refined Oil – Refined"],
+    ["Bakery & Breakfast", "Bread – Bread"], ["Bakery & Breakfast", "Eggs – Ande"], ["Bakery & Breakfast", "Biscuits – Biscuit"], ["Bakery & Breakfast", "Maggi – Maggi"], ["Bakery & Breakfast", "Tea – Chai Patti"], ["Bakery & Breakfast", "Coffee – Coffee"], ["Bakery & Breakfast", "Sugar – Cheeni"],
+    ["Household", "Detergent – Surf"], ["Household", "Dish Soap – Bartan Sabun"], ["Household", "Toilet Cleaner – Harpic"], ["Household", "Floor Cleaner – Parcha"], ["Household", "Bathing Soap – Sabun"], ["Household", "Shampoo – Shampoo"], ["Household", "Toothpaste – Manjan"]
+];
+
+let itemsDB = rawItems.map((item, idx) => ({
+    id: idx,
+    cat: item[0],
+    name: item[1]
+}));
+
+/* ---------------- STATE ---------------- */
+let selectedIds = new Set();
+let reviewData = {}; // { id: { qty: "", desc: "" } }
+let currentHistoryId = null;
+
+/* ---------------- INITIALIZATION ---------------- */
+window.onload = function() {
+    createParticles();
+    
+    // Simulate Splash Delay
+    setTimeout(() => {
+        document.getElementById('splash').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+    }, 2500); // 2.5 seconds
+
+    // Setup Search
+    const searchInput = document.getElementById('search-input');
+    searchInput.addEventListener('input', (e) => renderItems(e.target.value));
+    
+    // Initial Render (Empty or Suggestions)
+    renderItems("");
+};
+
+/* ---------------- CORE FUNCTIONS ---------------- */
+
+function createParticles() {
+    const container = document.getElementById('particles-container');
+    for(let i=0; i<40; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        const size = Math.random() * 5 + 2;
+        p.style.width = size + 'px';
+        p.style.height = size + 'px';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.top = Math.random() * 100 + '%';
+        p.style.animationDelay = (Math.random() * 5) + 's';
+        p.style.animationDuration = (Math.random() * 3 + 3) + 's';
+        container.appendChild(p);
+    }
+}
+
+function navigate(page) {
+    // Nav Tabs styling
+    document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+    if(page === 'saaman' || page === 'review') document.getElementById('nav-saaman').classList.add('active');
+    if(page === 'history' || page === 'checklist') document.getElementById('nav-history').classList.add('active');
+
+    // Pages visibility
+    document.querySelectorAll('.content').forEach(el => el.classList.add('hidden'));
+    
+    if(page === 'saaman') {
+        document.getElementById('page-saaman').classList.remove('hidden');
+        document.getElementById('footer-bar').style.transform = selectedIds.size > 0 ? 'translateY(0)' : 'translateY(120%)';
+    } else if (page === 'review') {
+        document.getElementById('page-review').classList.remove('hidden');
+        document.getElementById('footer-bar').style.transform = 'translateY(120%)'; // Hide footer
+        renderReview();
+    } else if (page === 'history') {
+        document.getElementById('page-history').classList.remove('hidden');
+        document.getElementById('footer-bar').style.transform = 'translateY(120%)';
+        renderHistory();
+    } else if (page === 'checklist') {
+        document.getElementById('page-checklist').classList.remove('hidden');
+        document.getElementById('footer-bar').style.transform = 'translateY(120%)';
+    }
+}
+
+/* ---------------- SAAMAN & SELECTION ---------------- */
+function renderItems(query) {
+    const container = document.getElementById('item-container');
+    const emptyState = document.getElementById('empty-state');
+    container.innerHTML = "";
+
+    // If query is empty, maybe don't show anything to keep it clean, OR show categories.
+    // Prompt implies dynamic matching. Let's show nothing until type, or show all if empty?
+    // Let's show nothing initially to keep UI clean, or popular. Let's show filtered.
+    
+    if (!query) {
+        emptyState.classList.add('hidden');
+        return; 
+    }
+
+    const lowerQ = query.toLowerCase();
+    const filtered = itemsDB.filter(i => i.name.toLowerCase().includes(lowerQ));
+
+    if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+        // Reset custom inputs
+    } else {
+        emptyState.classList.add('hidden');
+        filtered.forEach(item => {
+            const div = document.createElement('div');
+            const isSel = selectedIds.has(item.id);
+            div.className = `item-tag ${isSel ? 'selected' : ''}`;
+            
+            // Highlight Logic: Replace text with styled span
+            const regex = new RegExp(`(${query})`, 'gi');
+            const htmlName = item.name.replace(regex, `<span class="match-char">$1</span>`);
+            
+            div.innerHTML = htmlName;
+            div.onclick = () => toggleSelection(item.id, div);
+            container.appendChild(div);
+        });
+    }
+}
+
+function toggleSelection(id, element) {
+    if (selectedIds.has(id)) {
+        selectedIds.delete(id);
+        if(element) element.classList.remove('selected');
+    } else {
+        selectedIds.add(id);
+        if(element) element.classList.add('selected');
+    }
+    updateFooter();
+}
+
+function updateFooter() {
+    const footer = document.getElementById('footer-bar');
+    const scroller = document.getElementById('selection-scroll');
+    const count = document.getElementById('count-display');
+    
+    scroller.innerHTML = "";
+    count.innerText = `${selectedIds.size} items`;
+
+    if (selectedIds.size > 0) {
+        footer.classList.add('visible');
+        selectedIds.forEach(id => {
+            const item = itemsDB.find(i => i.id == id);
+            if(item) {
+                const chip = document.createElement('div');
+                chip.className = 'mini-chip';
+                chip.innerHTML = `${item.name.split('–')[0]} <span onclick="toggleSelection('${id}', null); updateFooter(); event.stopPropagation();">×</span>`;
+                scroller.appendChild(chip);
+            }
+        });
+    } else {
+        footer.classList.remove('visible');
+    }
+}
+
+function addCustomItem() {
+    const eng = document.getElementById('cust-eng').value.trim();
+    const hin = document.getElementById('cust-hin').value.trim();
+    if(eng || hin) {
+        const name = `${eng} ${hin ? '– '+hin : ''}`;
+        const newId = 'cust_' + Date.now();
+        itemsDB.push({ id: newId, cat: 'Custom', name: name });
+        selectedIds.add(newId);
+        
+        document.getElementById('cust-eng').value = "";
+        document.getElementById('cust-hin').value = "";
+        renderItems(document.getElementById('search-input').value);
+        updateFooter();
+    }
+}
+
+function goToReview() {
+    navigate('review');
+}
+
+/* ---------------- REVIEW & SUBMIT ---------------- */
+function renderReview() {
+    const listDiv = document.getElementById('review-list');
+    listDiv.innerHTML = "";
+    
+    // Group Items
+    const groups = {};
+    selectedIds.forEach(id => {
+        const item = itemsDB.find(i => i.id == id);
+        if(!groups[item.cat]) groups[item.cat] = [];
+        groups[item.cat].push(item);
+    });
+
+    for(const cat in groups) {
+        const card = document.createElement('div');
+        card.className = 'list-card fade-in';
+        
+        const title = document.createElement('div');
+        title.className = 'category-header';
+        title.innerText = cat;
+        card.appendChild(title);
+
+        groups[cat].forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'list-row';
+            
+            // Get existing data
+            const q = reviewData[item.id]?.qty || "";
+            const d = reviewData[item.id]?.desc || "";
+
+            row.innerHTML = `
+                <div class="item-name">${item.name}</div>
+                <div class="item-inputs">
+                    <input type="text" class="input-qty" placeholder="Qty" value="${q}" oninput="updateData('${item.id}', 'qty', this.value)">
+                    <input type="text" class="input-desc" placeholder="Note" value="${d}" oninput="updateData('${item.id}', 'desc', this.value)">
+                </div>
+            `;
+            card.appendChild(row);
+        });
+        listDiv.appendChild(card);
+    }
+}
+
+function updateData(id, field, val) {
+    if(!reviewData[id]) reviewData[id] = {};
+    reviewData[id][field] = val;
+}
+
+function getFormattedListObj() {
+    const groups = {};
+    selectedIds.forEach(id => {
+        const item = itemsDB.find(i => i.id == id);
+        if(!groups[item.cat]) groups[item.cat] = [];
+        groups[item.cat].push({
+            name: item.name,
+            qty: reviewData[item.id]?.qty || "",
+            desc: reviewData[item.id]?.desc || ""
+        });
+    });
+    return groups;
+}
+
+function saveToHistory() {
+    const listObj = getFormattedListObj();
+    const history = JSON.parse(localStorage.getItem('grahini_history') || "[]");
+    
+    // Flatten for simple storage
+    const flatItems = [];
+    for(const cat in listObj) {
+        listObj[cat].forEach(i => flatItems.push({ ...i, cat: cat }));
+    }
+
+    const newEntry = {
+        id: Date.now(),
+        date: new Date().toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }),
+        items: flatItems,
+        checks: [] // Indices of checked items
+    };
+
+    history.unshift(newEntry);
+    localStorage.setItem('grahini_history', JSON.stringify(history));
+}
+
+function shareToWhatsApp() {
+    const listObj = getFormattedListObj();
+    let text = "*🛍️ Shopping List*\n\n";
+    
+    for(const cat in listObj) {
+        text += `*🔹 ${cat}*\n`;
+        listObj[cat].forEach(i => {
+            const qStr = i.qty ? `(${i.qty})` : "";
+            const dStr = i.desc ? `- ${i.desc}` : "";
+            text += `◻️ ${i.name.split('–')[0]} ${qStr} ${dStr}\n`;
+        });
+        text += "\n";
+    }
+    
+    saveToHistory();
+    selectedIds.clear(); reviewData = {}; // Clear state
+    window.location.href = `https://wa.me/?text=${encodeURIComponent(text)}`;
+}
+
+/* ---------------- IMAGE GENERATION ---------------- */
+function generateReceipt() {
+    const template = document.getElementById('receipt-template');
+    const body = document.getElementById('receipt-body');
+    const dateEl = document.getElementById('receipt-date');
+    
+    body.innerHTML = "";
+    dateEl.innerText = new Date().toLocaleString();
+    
+    const listObj = getFormattedListObj();
+    for(const cat in listObj) {
+        const catHeader = document.createElement('div');
+        catHeader.className = 'receipt-cat';
+        catHeader.innerText = cat.toUpperCase();
+        body.appendChild(catHeader);
+
+        listObj[cat].forEach(i => {
+            const row = document.createElement('div');
+            row.className = 'receipt-row';
+            const det = i.desc ? `[${i.desc}]` : "";
+            row.innerHTML = `<span>${i.name.split('–')[0]} ${det}</span> <span>${i.qty}</span>`;
+            body.appendChild(row);
+        });
+    }
+
+    // Capture
+    html2canvas(template).then(canvas => {
+        const imgData = canvas.toDataURL("image/png");
+        document.getElementById('img-output-container').innerHTML = `<img src="${imgData}" class="generated-img" id="final-img">`;
+        document.getElementById('img-modal').classList.remove('hidden');
+        
+        saveToHistory(); // Also save when generating image
+        selectedIds.clear(); reviewData = {}; // Clear
+    });
+}
+
+function closeImgModal() {
+    document.getElementById('img-modal').classList.add('hidden');
+    navigate('history');
+}
+
+function shareImg() {
+    // On mobile, browser share API or long press
+    const img = document.getElementById('final-img');
+    const link = document.createElement('a');
+    link.href = img.src;
+    link.download = `Shopping_List_${Date.now()}.png`;
+    link.click();
+}
+
+/* ---------------- HISTORY & CHECKLIST ---------------- */
+function renderHistory() {
+    const container = document.getElementById('history-container');
+    container.innerHTML = "";
+    const history = JSON.parse(localStorage.getItem('grahini_history') || "[]");
+
+    if(history.length === 0) {
+        container.innerHTML = "<p style='text-align:center; color:#999; margin-top:50px;'>No history yet.</p>";
+        return;
+    }
+
+    history.forEach(entry => {
+        const div = document.createElement('div');
+        div.className = 'history-item fade-in';
+        div.onclick = () => openChecklist(entry.id);
+        
+        // Calc progress
+        const total = entry.items.length;
+        const checked = entry.checks ? entry.checks.length : 0;
+        const color = checked === total ? 'green' : 'orange';
+
+        div.innerHTML = `
+            <div>
+                <div class="hist-date">${entry.date}</div>
+                <div class="hist-count" style="color:${color}">${checked}/${total} Bought</div>
+            </div>
+            <div class="arrow-icon">›</div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+function openChecklist(histId) {
+    currentHistoryId = histId;
+    const history = JSON.parse(localStorage.getItem('grahini_history') || "[]");
+    const entry = history.find(h => h.id === histId);
+    
+    if(!entry) return;
+
+    const container = document.getElementById('checklist-container');
+    container.innerHTML = "";
+    
+    navigate('checklist');
+
+    entry.items.forEach((item, idx) => {
+        const isChecked = entry.checks && entry.checks.includes(idx);
+        
+        const row = document.createElement('div');
+        row.className = 'check-row';
+        row.onclick = () => toggleCheckUI(idx, row);
+        
+        row.innerHTML = `
+            <div class="check-box ${isChecked ? 'checked' : ''}" id="cb-${idx}"></div>
+            <div class="check-text ${isChecked ? 'checked' : ''}" id="txt-${idx}">
+                ${item.name.split('–')[0]} 
+                <span style="font-size:0.8rem; color:#888;">${item.qty ? '('+item.qty+')' : ''} ${item.desc}</span>
+            </div>
+        `;
+        container.appendChild(row);
+    });
+}
+
+function toggleCheckUI(idx, row) {
+    const cb = row.querySelector('.check-box');
+    const txt = row.querySelector('.check-text');
+    cb.classList.toggle('checked');
+    txt.classList.toggle('checked');
+}
+
+function saveChecklistProgress() {
+    if(!currentHistoryId) return;
+    
+    const history = JSON.parse(localStorage.getItem('grahini_history') || "[]");
+    const entryIndex = history.findIndex(h => h.id === currentHistoryId);
+    
+    if(entryIndex > -1) {
+        // Gather all checked indices
+        const newChecks = [];
+        const rows = document.getElementById('checklist-container').children;
+        for(let i=0; i<rows.length; i++) {
+            if(rows[i].querySelector('.check-box').classList.contains('checked')) {
+                newChecks.push(i);
+            }
+        }
+        
+        history[entryIndex].checks = newChecks;
+        localStorage.setItem('grahini_history', JSON.stringify(history));
+        
+        alert("Progress Saved! ✅");
+        navigate('history');
+    }
+}
+
+</script>
+</body>
+</html>
